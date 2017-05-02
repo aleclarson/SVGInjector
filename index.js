@@ -157,6 +157,31 @@ var loadSvg = function (url, callback) {
   }
 };
 
+// Make sure any internally referenced clipPath ids and their
+// clip-path references are unique.
+//
+// This addresses the issue of having multiple instances of the
+// same SVG on a page and only the first clipPath id is referenced.
+//
+// Browsers often shortcut the SVG Spec and don't use clipPaths
+// contained in parent elements that are hidden, so if you hide the first
+// SVG instance on the page, then all other instances lose their clipping.
+// Reference: https://bugzilla.mozilla.org/show_bug.cgi?id=376027
+
+// Handle all defs elements that have iri capable attributes as defined by w3c: http://www.w3.org/TR/SVG/linking.html#processingIRI
+// Mapping IRI addressable elements to the properties that can reference them:
+var iriElementsAndProperties = {
+  'clipPath': ['clip-path'],
+  'color-profile': ['color-profile'],
+  'cursor': ['cursor'],
+  'filter': ['filter'],
+  'linearGradient': ['fill', 'stroke'],
+  'marker': ['marker', 'marker-start', 'marker-mid', 'marker-end'],
+  'mask': ['mask'],
+  'pattern': ['fill', 'stroke'],
+  'radialGradient': ['fill', 'stroke']
+};
+
 // Inject a single element
 var injectElement = function (el, evalScripts, pngFallback, callback) {
 
@@ -244,31 +269,6 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
         svg.setAttribute(dataAttr.name, dataAttr.value);
       }
     });
-
-    // Make sure any internally referenced clipPath ids and their
-    // clip-path references are unique.
-    //
-    // This addresses the issue of having multiple instances of the
-    // same SVG on a page and only the first clipPath id is referenced.
-    //
-    // Browsers often shortcut the SVG Spec and don't use clipPaths
-    // contained in parent elements that are hidden, so if you hide the first
-    // SVG instance on the page, then all other instances lose their clipping.
-    // Reference: https://bugzilla.mozilla.org/show_bug.cgi?id=376027
-
-    // Handle all defs elements that have iri capable attributes as defined by w3c: http://www.w3.org/TR/SVG/linking.html#processingIRI
-    // Mapping IRI addressable elements to the properties that can reference them:
-    var iriElementsAndProperties = {
-      'clipPath': ['clip-path'],
-      'color-profile': ['color-profile'],
-      'cursor': ['cursor'],
-      'filter': ['filter'],
-      'linearGradient': ['fill', 'stroke'],
-      'marker': ['marker', 'marker-start', 'marker-mid', 'marker-end'],
-      'mask': ['mask'],
-      'pattern': ['fill', 'stroke'],
-      'radialGradient': ['fill', 'stroke']
-    };
 
     var element, elementDefs, properties, currentId, newId;
     Object.keys(iriElementsAndProperties).forEach(function (key) {
