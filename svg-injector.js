@@ -31,26 +31,6 @@
     return out.join(' ');
   }
 
-  /**
-   * cache (or polyfill for <= IE8) Array.forEach()
-   * source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
-   */
-  var forEach = Array.prototype.forEach || function (fn, scope) {
-    if (this === void 0 || this === null || typeof fn !== 'function') {
-      throw new TypeError();
-    }
-
-    /* jshint bitwise: false */
-    var i, len = this.length >>> 0;
-    /* jshint bitwise: true */
-
-    for (i = 0; i < len; ++i) {
-      if (i in this) {
-        fn.call(scope, this[i], i, this);
-      }
-    }
-  };
-
   // SVG Cache
   var svgCache = {};
 
@@ -262,7 +242,7 @@
       var imgData = [].filter.call(el.attributes, function (at) {
         return (/^data-\w[\w\-]*$/).test(at.name);
       });
-      forEach.call(imgData, function (dataAttr) {
+      imgData.forEach(function (dataAttr) {
         if (dataAttr.name && dataAttr.value) {
           svg.setAttribute(dataAttr.name, dataAttr.value);
         }
@@ -305,7 +285,7 @@
 
           // All of the properties that can reference this element type
           var referencingElements;
-          forEach.call(properties, function (property) {
+          properties.forEach(function (property) {
             // :NOTE: using a substring match attr selector here to deal with IE "adding extra quotes in url() attrs"
             referencingElements = svg.querySelectorAll('[' + property + '*="' + currentId + '"]');
             for (var j = 0, referencingElementLen = referencingElements.length; j < referencingElementLen; j++) {
@@ -369,7 +349,7 @@
       //
       // Reference: https://github.com/iconic/SVGInjector/issues/23
       var styleTags = svg.querySelectorAll('style');
-      forEach.call(styleTags, function (styleTag) {
+      styleTags.forEach(function (styleTag) {
         styleTag.textContent += '';
       });
 
@@ -421,9 +401,9 @@
     var eachCallback = options.each;
 
     // Do the injection...
-    if (elements.length !== undefined) {
+    if (elements.constructor === Array) {
       var elementsLoaded = 0;
-      forEach.call(elements, function (element) {
+      elements.forEach(function (element) {
         injectElement(element, evalScripts, pngFallback, function (svg) {
           if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
           if (done && elements.length === ++elementsLoaded) done(elementsLoaded);
