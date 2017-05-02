@@ -411,16 +411,11 @@
       });
     }
     else {
-      if (elements) {
-        injectElement(elements, evalScripts, pngFallback, function (svg) {
-          if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
-          if (done) done(1);
-          elements = null;
-        });
-      }
-      else {
-        if (done) done(0);
-      }
+      injectElement(elements, evalScripts, pngFallback, function (svg) {
+        if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
+        if (done) done(1);
+        elements = null;
+      });
     }
   };
 
