@@ -207,6 +207,7 @@ var SVGInjector = function (el, evalScripts, callback) {
   if (!hasSvgSupport) {
     var pngFallback = el.getAttribute('data-png');
     if (pngFallback) {
+      el.setAttribute('style', 'width: 100%; height: 100%;');
       el.setAttribute('src', pngFallback);
       callback(null, el);
       return;
@@ -253,10 +254,10 @@ var SVGInjector = function (el, evalScripts, callback) {
     var classMerge = [].concat(svg.getAttribute('class') || [], 'injected-svg', el.getAttribute('class') || []).join(' ');
     svg.setAttribute('class', uniqueClasses(classMerge));
 
-    var imgStyle = el.getAttribute('style');
-    if (imgStyle) {
-      svg.setAttribute('style', imgStyle);
-    }
+    // Stretch to fit the parent node.
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('preserveAspectRatio', 'none');
 
     // Copy all the data elements to the svg
     var imgData = [].filter.call(el.attributes, function (at) {
