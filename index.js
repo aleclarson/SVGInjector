@@ -203,12 +203,12 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
     // Per-element specific PNG fallback defined, so use that
     if (perElementFallback) {
       el.setAttribute('src', perElementFallback);
-      callback(null);
+      callback(null, el);
     }
     // Global PNG fallback directoriy defined, use the same-named PNG
     else if (pngFallback) {
       el.setAttribute('src', pngFallback + '/' + imgUrl.split('/').pop().replace('.svg', '.png'));
-      callback(null);
+      callback(null, el);
     }
     // um...
     else {
@@ -361,7 +361,7 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
     // Increment the injected count
     injectCount++;
 
-    callback(svg);
+    callback(null, svg);
   });
 };
 
@@ -380,7 +380,7 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
  * @param {function} callback
  * @return {object} Instance of SVGInjector
  */
-var SVGInjector = function (element, options, done) {
+var SVGInjector = function (element, options, callback) {
 
   // Options & defaults
   options = options || {};
@@ -395,7 +395,7 @@ var SVGInjector = function (element, options, done) {
   var pngFallback = options.pngFallback || false;
 
   // Do the injection...
-  injectElement(element, evalScripts, pngFallback, done);
+  injectElement(element, evalScripts, pngFallback, callback || Function.prototype);
 };
 
 module.exports = SVGInjector;
