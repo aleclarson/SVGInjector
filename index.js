@@ -182,11 +182,20 @@ var iriElementsAndProperties = {
   'radialGradient': ['fill', 'stroke']
 };
 
-// Inject a single element
-var injectElement = function (el, evalScripts, pngFallback, callback) {
+/**
+ * :NOTE: We are using get/setAttribute with SVG because the SVG DOM spec differs from HTML DOM and
+ * can return other unexpected object types when trying to directly access svg properties.
+ * ex: "className" returns a SVGAnimatedString with the class value found in the "baseVal" property,
+ * instead of simple string like with HTML Elements.
+ */
+var SVGInjector = function (el, evalScripts, callback) {
+
+  // Default values
+  if (!evalScripts) evalScripts = 'always';
+  if (!callback) callback = Function.prototype;
 
   // Grab the src or data-src attribute
-  var imgUrl = el.getAttribute('data-src') || el.getAttribute('src');
+  var imgUrl = el.getAttribute('data-src');
 
   // We can only inject SVG
   if (!(/\.svg/i).test(imgUrl)) {
@@ -194,27 +203,16 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
     return;
   }
 
-  // If we don't have SVG support try to fall back to a png,
-  // either defined per-element via data-fallback or data-png,
-  // or globally via the pngFallback directory setting
+  // If we don't have SVG support try to fall back to a png.
   if (!hasSvgSupport) {
-    var perElementFallback = el.getAttribute('data-fallback') || el.getAttribute('data-png');
-
-    // Per-element specific PNG fallback defined, so use that
-    if (perElementFallback) {
-      el.setAttribute('src', perElementFallback);
+    var pngFallback = el.getAttribute('data-png');
+    if (pngFallback) {
+      el.setAttribute('src', pngFallback);
       callback(null, el);
-    }
-    // Global PNG fallback directoriy defined, use the same-named PNG
-    else if (pngFallback) {
-      el.setAttribute('src', pngFallback + '/' + imgUrl.split('/').pop().replace('.svg', '.png'));
-      callback(null, el);
-    }
-    // um...
-    else {
-      callback('This browser does not support SVG and no PNG fallback was defined.');
+      return;
     }
 
+    callback('This browser does not support SVG and no PNG fallback was defined.');
     return;
   }
 
@@ -363,39 +361,6 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
 
     callback(null, svg);
   });
-};
-
-/**
- * SVGInjector
- *
- * Replace the given elements with their full inline SVG DOM elements.
- *
- * :NOTE: We are using get/setAttribute with SVG because the SVG DOM spec differs from HTML DOM and
- * can return other unexpected object types when trying to directly access svg properties.
- * ex: "className" returns a SVGAnimatedString with the class value found in the "baseVal" property,
- * instead of simple string like with HTML Elements.
- *
- * @param {mixes} Array of or single DOM element
- * @param {object} options
- * @param {function} callback
- * @return {object} Instance of SVGInjector
- */
-var SVGInjector = function (element, options, callback) {
-
-  // Options & defaults
-  options = options || {};
-
-  // Should we run the scripts blocks found in the SVG
-  // 'always' - Run them every time
-  // 'once' - Only run scripts once for each SVG
-  // [false|'never'] - Ignore scripts
-  var evalScripts = options.evalScripts || 'always';
-
-  // Location of fallback pngs, if desired
-  var pngFallback = options.pngFallback || false;
-
-  // Do the injection...
-  injectElement(element, evalScripts, pngFallback, callback || Function.prototype);
 };
 
 module.exports = SVGInjector;
