@@ -380,7 +380,7 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
  * @param {function} callback
  * @return {object} Instance of SVGInjector
  */
-var SVGInjector = function (elements, options, done) {
+var SVGInjector = function (element, options, done) {
 
   // Options & defaults
   options = options || {};
@@ -394,26 +394,8 @@ var SVGInjector = function (elements, options, done) {
   // Location of fallback pngs, if desired
   var pngFallback = options.pngFallback || false;
 
-  // Callback to run during each SVG injection, returning the SVG injected
-  var eachCallback = options.each;
-
   // Do the injection...
-  if (elements.constructor === Array) {
-    var elementsLoaded = 0;
-    elements.forEach(function (element) {
-      injectElement(element, evalScripts, pngFallback, function (svg) {
-        if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
-        if (done && elements.length === ++elementsLoaded) done(elementsLoaded);
-      });
-    });
-  }
-  else {
-    injectElement(elements, evalScripts, pngFallback, function (svg) {
-      if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
-      if (done) done(1);
-      elements = null;
-    });
-  }
+  injectElement(element, evalScripts, pngFallback, done);
 };
 
 module.exports = SVGInjector;
