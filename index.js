@@ -11,23 +11,6 @@
 var isLocal = window.location.protocol === 'file:';
 var hasSvgSupport = document.implementation.hasFeature('http://www.w3.org/TR/SVG11/feature#BasicStructure', '1.1');
 
-function uniqueClasses(list) {
-  list = list.split(' ');
-
-  var hash = {};
-  var i = list.length;
-  var out = [];
-
-  while (i--) {
-    if (!hash.hasOwnProperty(list[i])) {
-      hash[list[i]] = 1;
-      out.unshift(list[i]);
-    }
-  }
-
-  return out.join(' ');
-}
-
 // SVG Cache
 var svgCache = {};
 
@@ -182,11 +165,20 @@ var iriElementsAndProperties = {
   'radialGradient': ['fill', 'stroke']
 };
 
-// Inject a single element
-var injectElement = function (el, evalScripts, pngFallback, callback) {
+/**
+ * :NOTE: We are using get/setAttribute with SVG because the SVG DOM spec differs from HTML DOM and
+ * can return other unexpected object types when trying to directly access svg properties.
+ * ex: "className" returns a SVGAnimatedString with the class value found in the "baseVal" property,
+ * instead of simple string like with HTML Elements.
+ */
+var SVGInjector = function (el, evalScripts, callback) {
+
+  // Default values
+  if (!evalScripts) evalScripts = 'always';
+  if (!callback) callback = Function.prototype;
 
   // Grab the src or data-src attribute
-  var imgUrl = el.getAttribute('data-src') || el.getAttribute('src');
+  var imgUrl = el.getAttribute('data-src');
 
   // We can only inject SVG
   if (!(/\.svg/i).test(imgUrl)) {
@@ -194,27 +186,17 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
     return;
   }
 
-  // If we don't have SVG support try to fall back to a png,
-  // either defined per-element via data-fallback or data-png,
-  // or globally via the pngFallback directory setting
+  // If we don't have SVG support try to fall back to a png.
   if (!hasSvgSupport) {
-    var perElementFallback = el.getAttribute('data-fallback') || el.getAttribute('data-png');
-
-    // Per-element specific PNG fallback defined, so use that
-    if (perElementFallback) {
-      el.setAttribute('src', perElementFallback);
-      callback(null);
-    }
-    // Global PNG fallback directoriy defined, use the same-named PNG
-    else if (pngFallback) {
-      el.setAttribute('src', pngFallback + '/' + imgUrl.split('/').pop().replace('.svg', '.png'));
-      callback(null);
-    }
-    // um...
-    else {
-      callback('This browser does not support SVG and no PNG fallback was defined.');
+    var pngFallback = el.getAttribute('data-png');
+    if (pngFallback) {
+      el.setAttribute('style', 'width: 100%; height: 100%;');
+      el.setAttribute('src', pngFallback);
+      callback(null, el);
+      return;
     }
 
+    callback('This browser does not support SVG and no PNG fallback was defined.');
     return;
   }
 
@@ -241,34 +223,10 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
       return false;
     }
 
-    var imgId = el.getAttribute('id');
-    if (imgId) {
-      svg.setAttribute('id', imgId);
-    }
-
-    var imgTitle = el.getAttribute('title');
-    if (imgTitle) {
-      svg.setAttribute('title', imgTitle);
-    }
-
-    // Concat the SVG classes + 'injected-svg' + the img classes
-    var classMerge = [].concat(svg.getAttribute('class') || [], 'injected-svg', el.getAttribute('class') || []).join(' ');
-    svg.setAttribute('class', uniqueClasses(classMerge));
-
-    var imgStyle = el.getAttribute('style');
-    if (imgStyle) {
-      svg.setAttribute('style', imgStyle);
-    }
-
-    // Copy all the data elements to the svg
-    var imgData = [].filter.call(el.attributes, function (at) {
-      return (/^data-\w[\w\-]*$/).test(at.name);
-    });
-    imgData.forEach(function (dataAttr) {
-      if (dataAttr.name && dataAttr.value) {
-        svg.setAttribute(dataAttr.name, dataAttr.value);
-      }
-    });
+    // Stretch to fit the parent node.
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('preserveAspectRatio', 'none');
 
     var element, elementDefs, properties, currentId, newId;
     Object.keys(iriElementsAndProperties).forEach(function (key) {
@@ -361,59 +319,8 @@ var injectElement = function (el, evalScripts, pngFallback, callback) {
     // Increment the injected count
     injectCount++;
 
-    callback(svg);
+    callback(null, svg);
   });
-};
-
-/**
- * SVGInjector
- *
- * Replace the given elements with their full inline SVG DOM elements.
- *
- * :NOTE: We are using get/setAttribute with SVG because the SVG DOM spec differs from HTML DOM and
- * can return other unexpected object types when trying to directly access svg properties.
- * ex: "className" returns a SVGAnimatedString with the class value found in the "baseVal" property,
- * instead of simple string like with HTML Elements.
- *
- * @param {mixes} Array of or single DOM element
- * @param {object} options
- * @param {function} callback
- * @return {object} Instance of SVGInjector
- */
-var SVGInjector = function (elements, options, done) {
-
-  // Options & defaults
-  options = options || {};
-
-  // Should we run the scripts blocks found in the SVG
-  // 'always' - Run them every time
-  // 'once' - Only run scripts once for each SVG
-  // [false|'never'] - Ignore scripts
-  var evalScripts = options.evalScripts || 'always';
-
-  // Location of fallback pngs, if desired
-  var pngFallback = options.pngFallback || false;
-
-  // Callback to run during each SVG injection, returning the SVG injected
-  var eachCallback = options.each;
-
-  // Do the injection...
-  if (elements.constructor === Array) {
-    var elementsLoaded = 0;
-    elements.forEach(function (element) {
-      injectElement(element, evalScripts, pngFallback, function (svg) {
-        if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
-        if (done && elements.length === ++elementsLoaded) done(elementsLoaded);
-      });
-    });
-  }
-  else {
-    injectElement(elements, evalScripts, pngFallback, function (svg) {
-      if (eachCallback && typeof eachCallback === 'function') eachCallback(svg);
-      if (done) done(1);
-      elements = null;
-    });
-  }
 };
 
 module.exports = SVGInjector;
