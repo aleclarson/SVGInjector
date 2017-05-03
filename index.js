@@ -11,23 +11,6 @@
 var isLocal = window.location.protocol === 'file:';
 var hasSvgSupport = document.implementation.hasFeature('http://www.w3.org/TR/SVG11/feature#BasicStructure', '1.1');
 
-function uniqueClasses(list) {
-  list = list.split(' ');
-
-  var hash = {};
-  var i = list.length;
-  var out = [];
-
-  while (i--) {
-    if (!hash.hasOwnProperty(list[i])) {
-      hash[list[i]] = 1;
-      out.unshift(list[i]);
-    }
-  }
-
-  return out.join(' ');
-}
-
 // SVG Cache
 var svgCache = {};
 
@@ -240,34 +223,10 @@ var SVGInjector = function (el, evalScripts, callback) {
       return false;
     }
 
-    var imgId = el.getAttribute('id');
-    if (imgId) {
-      svg.setAttribute('id', imgId);
-    }
-
-    var imgTitle = el.getAttribute('title');
-    if (imgTitle) {
-      svg.setAttribute('title', imgTitle);
-    }
-
-    // Concat the SVG classes + 'injected-svg' + the img classes
-    var classMerge = [].concat(svg.getAttribute('class') || [], 'injected-svg', el.getAttribute('class') || []).join(' ');
-    svg.setAttribute('class', uniqueClasses(classMerge));
-
     // Stretch to fit the parent node.
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '100%');
     svg.setAttribute('preserveAspectRatio', 'none');
-
-    // Copy all the data elements to the svg
-    var imgData = [].filter.call(el.attributes, function (at) {
-      return (/^data-\w[\w\-]*$/).test(at.name);
-    });
-    imgData.forEach(function (dataAttr) {
-      if (dataAttr.name && dataAttr.value) {
-        svg.setAttribute(dataAttr.name, dataAttr.value);
-      }
-    });
 
     var element, elementDefs, properties, currentId, newId;
     Object.keys(iriElementsAndProperties).forEach(function (key) {
